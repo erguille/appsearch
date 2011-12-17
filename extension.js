@@ -1,19 +1,20 @@
-// inspired by https://github.com/brot/gnome-shell-extension-sshsearch/
+// inspired by github.com/brot/gnome-shell-extension-sshsearch/
 // licence GPLv3
 // author: Lukas Vacek <lucas.vacek@gmail.com>
 
 // Linux Mint 12 supported
-// uses apt-cache showpkg to search for packages
+// uses apt-cache show to search for packages
 // uses mint-make-cmd to install
 // /usr/share/gnome-shell/js/ui/search.js for API docs :-)
 const St = imports.gi.St;
 const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
 const Search = imports.ui.search;
+const GLib = imports.gi.GLib;
 
 let appSearchProvider;
 
-// inherits from Searc.SearchProvider
+// inherits from Search.SearchProvider
 function AppSearchProvider() {
 	Search.SearchProvider.call(this,"AppSearch"); // call parent constructor
 }
@@ -22,7 +23,18 @@ AppSearchProvider.prototype = new Search.SearchProvider();
 AppSearchProvider.prototype.constructor = AppSearchProvider;
 // override methods
 AppSearchProvider.prototype.getInitialResultSet = function(terms) {
-	return [ "hello" ];
+	for (let i=0; i<terms.length; i++) {
+		// command line injection possible so santize
+		if ( ! ( /^[-.,_0-9a-zA-Z]+$/.test(terms[i]) ) ) {
+			return [];
+		}
+		let argv = "apt-cache -q=2 -n show "+terms[i];
+		let [res, out, err, return_code] = GLib.spawn_command_line_sync(argv);
+		if (return_code == 0) {
+			return [ terms[i] ];
+		}
+	}
+	return [];
 }
 
 AppSearchProvider.prototype.getSubsearchResultSet = function(prevResults,terms) {
@@ -31,8 +43,8 @@ AppSearchProvider.prototype.getSubsearchResultSet = function(prevResults,terms) 
 
 AppSearchProvider.prototype.getResultMeta = function(resultId) {
 	return {
-		'id':"123",
-		'name':"hi there!",
+		'id': resultId,
+		'name': resultId,
 		'createIcon': function(size) {
 			return new St.Icon({ 
 				'icon_type':St.IconType.FULLCOLOR,

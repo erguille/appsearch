@@ -11,6 +11,7 @@ const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
 const Search = imports.ui.search;
 const GLib = imports.gi.GLib;
+const Util = imports.misc.util;
 
 let appSearchProvider;
 
@@ -53,6 +54,11 @@ AppSearchProvider.prototype.getResultMeta = function(resultId) {
 			});
 		}
 	};
+}
+
+AppSearchProvider.prototype.activateResult = function(resultId) {
+	let args = ["mint-make-cmd",resultId];
+	Util.spawn(args);
 }
 
 function init() {

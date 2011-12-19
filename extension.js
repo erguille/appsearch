@@ -15,60 +15,65 @@ const Util = imports.misc.util;
 
 let appSearchProvider;
 
-// inherits from Search.SearchProvider
 function AppSearchProvider() {
-	Search.SearchProvider.call(this,"AppSearch"); // call parent constructor
-}
-// inheritance
-AppSearchProvider.prototype = new Search.SearchProvider();
-AppSearchProvider.prototype.constructor = AppSearchProvider;
-// override methods
-AppSearchProvider.prototype.getInitialResultSet = function(terms) {
-	for (let i=0; i<terms.length; i++) {
-		// command line injection possible so santize
-		if ( ! ( /^[-.,_0-9a-zA-Z]+$/.test(terms[i]) ) ) {
-			return [];
-		}
-		let argv = "apt-cache -q=2 -n show "+terms[i];
-		let [res, out, err, return_code] = GLib.spawn_command_line_sync(argv);
-		if (return_code == 0) {
-			return [ terms[i] ];
-		}
-	}
-	return [];
+    this._init.apply(this, arguments);
 }
 
-AppSearchProvider.prototype.getSubsearchResultSet = function(prevResults,terms) {
-	return this.getInitialResultSet(terms);
-}
+AppSearchProvider.prototype = {
+    // inherits from Search.SearchProvider
+    __proto__: Search.SearchProvider.prototype,
 
-AppSearchProvider.prototype.getResultMeta = function(resultId) {
-	return {
-		'id': resultId,
-		'name': resultId,
-		'createIcon': function(size) {
-			return new St.Icon({ 
-				'icon_type':St.IconType.FULLCOLOR,
-				'icon_size':size,
-				'icon_name':"system-software-install"
-			});
-		}
-	};
-}
+    _init: function(title) {
+        Search.SearchProvider.prototype._init.call(this, title);
+    },
 
-AppSearchProvider.prototype.activateResult = function(resultId) {
-	let args = ["mint-make-cmd",resultId];
-	Util.spawn(args);
+    getInitialResultSet: function(terms) { 
+        for (let i=0; i<terms.length; i++) {
+            // command line injection possible so santize
+            if ( ! ( /^[-.,_0-9a-zA-Z]+$/.test(terms[i]) ) ) {
+                return [];
+            }
+            let argv = "apt-cache -q=2 -n show "+terms[i];
+            let [res, out, err, return_code] = GLib.spawn_command_line_sync(argv);
+            if (return_code == 0) {
+                return [ terms[i] ];
+            }
+        }
+        return [];
+    },
+
+    getSubsearchResultSet: function(prevResults, terms) {
+        return this.getInitialResultSet(terms);
+    },
+
+    getResultMeta: function(resultId) {
+        return {
+            'id': resultId,
+            'name': resultId,
+            'createIcon': function(size) {
+                return new St.Icon({ 
+                    'icon_type':St.IconType.FULLCOLOR,
+                    'icon_size':size,
+                    'icon_name':"system-software-install"
+                });
+            }
+        };
+    },
+
+    activateResult: function(resultId) {
+    	let args = ["mint-make-cmd",resultId];
+	    Util.spawn(args);
+    }
 }
 
 function init() {
-	appSearchProvider = new AppSearchProvider();
+    appSearchProvider = new AppSearchProvider('APP SEARCH');
 }
 
 function enable() {
-        Main.overview.addSearchProvider(appSearchProvider);
+    Main.overview.addSearchProvider(appSearchProvider);
 }
 
 function disable() {
-        Main.overview.removeSearchProvider(appSearchProvider);
+    Main.overview.removeSearchProvider(appSearchProvider);
 }

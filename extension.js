@@ -33,16 +33,29 @@ AppSearchProvider.prototype = {
             if ( ! ( /^[-.,_0-9a-zA-Z]+$/.test(terms[i]) ) ) {
                 return [];
             }
-            let argv = "apt-cache -q=2 -n show "+terms[i];
-            let [res, out, err, return_code] = GLib.spawn_command_line_sync(argv);
-            if (return_code == 0) {
-                return [ terms[i] ];
-            }
+            let searched_app_name = terms[i];
+            let argv = ["apt-cache","-q=2","-n","show",searched_app_name];
+            let [success,pid,stdin,stdout,stderr] = 
+                GLib.spawn_async_with_pipes(null,
+                   argv,null,
+                   GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.DO_NOT_REAP_CHILD,
+                   null,null);
+            if (!success) { return; }
+            
+            this.startAsync();
+            _self = this;
+            GLib.child_watch_add(GLib.PRIORITY_DEFAULT, pid, function(pid, status) {
+                GLib.spawn_close_pid(pid);
+                if (status == 0) {
+                    _self.addItems([searched_app_name]);
+                }
+            });
         }
         return [];
     },
 
     getSubsearchResultSet: function(prevResults, terms) {
+        this.tryCancelAsync();
         return this.getInitialResultSet(terms);
     },
 

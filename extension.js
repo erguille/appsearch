@@ -74,7 +74,7 @@ AppSearchProvider.prototype = {
     },
 
     activateResult: function(resultId) {
-    	let args = ["mint-make-cmd",resultId];
+    	let args = ["apturl","apt://"+resultId];
 	    Util.spawn(args);
     }
 }

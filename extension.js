@@ -11,6 +11,7 @@ const Main = imports.ui.main;
 const Tweener = imports.ui.tweener;
 const Search = imports.ui.search;
 const GLib = imports.gi.GLib;
+const Gio = imports.gi.Gio;
 const Util = imports.misc.util;
 
 let appSearchProvider;
@@ -41,10 +42,18 @@ AppSearchProvider.prototype = {
                    GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.DO_NOT_REAP_CHILD,
                    null,null);
             if (!success) { return; }
-            
+
+            let stream_stdin = new Gio.UnixOutputStream( { fd: stdin } );
+            let stream_stdout = new Gio.UnixInputStream( { fd: stdout } );
+            let stream_stderr = new Gio.UnixInputStream( { fd: stderr } );
+                       
             this.startAsync();
             _self = this;
+            // close stream_stdin, stream_stdout, stream_stderr in the callback
             GLib.child_watch_add(GLib.PRIORITY_DEFAULT, pid, function(pid, status) {
+                stream_stdin.close(null);
+                stream_stdout.close(null);
+                stream_stderr.close(null);
                 GLib.spawn_close_pid(pid);
                 if (status == 0) {
                     _self.addItems([searched_app_name]);

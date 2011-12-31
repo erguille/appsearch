@@ -36,35 +36,16 @@ AppSearchProvider.prototype = {
             }
             let searched_app_name = terms[i];
             let argv = ["apt-cache","-q=2","-n","show",searched_app_name];
-            let [success,pid,stdin,stdout,stderr] = 
-                GLib.spawn_async_with_pipes(null,
+            let [success,pid] = 
+                GLib.spawn_async(null,
                    argv,null,
                    GLib.SpawnFlags.SEARCH_PATH | GLib.SpawnFlags.DO_NOT_REAP_CHILD,
                    null,null);
             if (!success) { return []; }
 
-            let stream_stdin = new Gio.UnixOutputStream( { fd: stdin } );
-            let stream_stdout = new Gio.UnixInputStream( { fd: stdout } );
-            let stream_data_stdout = new Gio.DataInputStream( { base_stream: stream_stdout } );
-            let stream_stderr = new Gio.UnixInputStream( { fd: stderr } );
-                       
             this.startAsync();
             let _self = this;
-            // close stream_stdin, stream_stdout, stream_stderr in the callback
             GLib.child_watch_add(GLib.PRIORITY_DEFAULT, pid, function(pid, status) {
-                stream_stdin.close(null);
-                stream_stderr.close(null);
-                let count = 0;
-                while (true) {
-                    let [line,length] = stream_data_stdout.read_line(null);
-                    //if (line.indexOf("Package") == 0 ) {
-                    //    global.log("hit");
-                    //}
-                    count += 1;
-                    if ( line == null ) { break; }
-                }
-                global.log(count);
-                stream_stdout.close(null);
                 GLib.spawn_close_pid(pid);
                 if (status == 0) {
                     _self.addItems([searched_app_name]);

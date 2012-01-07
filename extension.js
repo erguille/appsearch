@@ -2,7 +2,7 @@
 // licence GPLv3
 // author: Lukas Vacek <lucas.vacek@gmail.com>
 
-// Ububtu, Debian, Linux Mint 12, and PackageKit supported
+// Ubuntu, Debian, Linux Mint 12, and PackageKit supported
 // uses apt-cache show to search for packages
 // If apt-cache is not available, packagekit used instead
 // uses mint-make-cmd to install
